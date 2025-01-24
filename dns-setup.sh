@@ -18,6 +18,8 @@ declare -A DNS_SERVERS=(
     ["DE"]="154.83.83.90"
 )
 
+
+
 # 检查并处理 systemd-resolved
 if systemctl is-active systemd-resolved &>/dev/null; then
     echo "检测到 systemd-resolved 正在运行，正在停止服务..."
@@ -57,6 +59,24 @@ if [ -f /etc/resolv.conf ]; then
     cp -f /etc/resolv.conf /etc/resolv.conf.bak
     rm -f /etc/resolv.conf
 fi
+
+# 创建回滚函数
+rollback_dns() {
+    echo -e "\n正在回滚 DNS 配置..."
+    if [ -f /etc/resolv.conf.bak ]; then
+        chattr -i /etc/resolv.conf 2>/dev/null
+        cp -f /etc/resolv.conf.bak /etc/resolv.conf
+        chattr +i /etc/resolv.conf
+        echo "已恢复原始 DNS 配置"
+    else
+        echo "未找到备份文件，无法回滚"
+    fi
+    exit 1
+}
+
+# 添加 trap 处理异常退出和 Ctrl+C
+trap rollback_dns SIGINT
+trap rollback_dns ERR SIGTERM
 
 # 显示可用的 DNS 选项
 echo "请选择 DNS 服务器位置："
@@ -98,24 +118,6 @@ case $choice in
         selected="Default"
         ;;
 esac
-
-# 创建回滚函数
-rollback_dns() {
-    echo -e "\n正在回滚 DNS 配置..."
-    if [ -f /etc/resolv.conf.bak ]; then
-        chattr -i /etc/resolv.conf 2>/dev/null
-        cp -f /etc/resolv.conf.bak /etc/resolv.conf
-        chattr +i /etc/resolv.conf
-        echo "已恢复原始 DNS 配置"
-    else
-        echo "未找到备份文件，无法回滚"
-    fi
-    exit 1
-}
-
-# 添加 trap 处理异常退出和 Ctrl+C
-trap rollback_dns SIGINT
-trap rollback_dns ERR SIGTERM
 
 # 创建新的 resolv.conf
 if ! echo "nameserver ${DNS_SERVERS[$selected]}" > /etc/resolv.conf; then
