@@ -101,7 +101,7 @@ esac
 
 # 创建回滚函数
 rollback_dns() {
-    echo "正在回滚 DNS 配置..."
+    echo -e "\n正在回滚 DNS 配置..."
     if [ -f /etc/resolv.conf.bak ]; then
         chattr -i /etc/resolv.conf 2>/dev/null
         cp -f /etc/resolv.conf.bak /etc/resolv.conf
@@ -110,10 +110,12 @@ rollback_dns() {
     else
         echo "未找到备份文件，无法回滚"
     fi
+    exit 1
 }
 
-# 添加 trap 处理异常退出
-trap rollback_dns ERR SIGINT SIGTERM
+# 添加 trap 处理异常退出和 Ctrl+C
+trap rollback_dns SIGINT
+trap rollback_dns ERR SIGTERM
 
 # 创建新的 resolv.conf
 if ! echo "nameserver ${DNS_SERVERS[$selected]}" > /etc/resolv.conf; then
