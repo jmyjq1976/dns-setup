@@ -1,5 +1,16 @@
 #!/bin/bash
 
+# 输出脚本介绍信息
+echo "======================================"
+echo "       DNS 配置自动化工具 v1.0        "
+echo "======================================"
+echo "适用重启服务器 DNS 会被重置的情况"
+echo "用于配置并锁定 DNS 服务器设置"
+echo "下述 153DNS 仅适用 Acck/Akile/Hytron 服务器"
+echo "其他服务器请使用输入 9 自定义 DNS"
+echo "======================================"
+echo ""
+
 # 检查是否以 root 权限运行
 if [ "$EUID" -ne 0 ]; then
     echo "请使用 root 权限运行此脚本"
@@ -120,7 +131,7 @@ case $choice in
 esac
 
 # 创建新的 resolv.conf
-if ! echo "nameserver ${DNS_SERVERS[$selected]}" > /etc/resolv.conf; then
+if ! echo -e "#注意：该配置文件已被锁定，如需手动编辑请先解锁 chattr -i /etc/resolv.conf\nnameserver ${DNS_SERVERS[$selected]}" > /etc/resolv.conf; then
     echo "设置 DNS 失败, 回滚到原始配置"
     rollback_dns
     exit 1
